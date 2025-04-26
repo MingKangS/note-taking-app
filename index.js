@@ -4,6 +4,7 @@ const bodyParser = require("body-parser");
 const sequelize = require("./src/config/database");
 const redisClient = require("./src/config/redis");
 const authRoutes = require("./src/routes/authRoutes");
+const noteRoutes = require("./src/routes/noteRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,6 +17,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/auth", authRoutes);
+app.use("/notes", noteRoutes);
 
 (async () => {
   try {
