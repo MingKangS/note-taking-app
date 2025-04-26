@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000" # Map port 3000 of the container to port 3000 on the host
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=notes
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/usr/src/app # Mount the current directory for live code updates (optional for dev)
+
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: notes
+    ports:
+      - "3307:3306" # Map port 3306 of the container to port 3306 on the host
+    volumes:
+      - db_data:/var/lib/mysql # Persist MySQL data
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379" # Map port 6379 of the container to port 6379 on the host
+
+volumes:
+  db_data:
