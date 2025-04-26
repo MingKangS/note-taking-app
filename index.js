@@ -3,6 +3,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const sequelize = require("./src/config/database");
 const redisClient = require("./src/config/redis");
+const authRoutes = require("./src/routes/authRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,6 +14,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.get("/", (req, res) => {
   res.send("Welcome to the Note-Taking API!");
 });
+
+app.use("/auth", authRoutes);
 
 (async () => {
   try {

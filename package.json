@@ -4,8 +4,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "docker-compose up db redis && nodemon index.js",
+    "docker:start": "docker-compose up --build",
+    "docker:stop": "docker-compose down"
   },
   "keywords": [],
   "author": "",
