@@ -27,3 +27,6 @@ Thumbs.db
 # Build files
 dist/
 build/
+
+# Sequelize config
+config/

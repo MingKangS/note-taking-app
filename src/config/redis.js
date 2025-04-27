@@ -1,14 +1,12 @@
 const redis = require("redis");
 
-// Create a Redis client using environment variables
 const client = redis.createClient({
   socket: {
-    host: process.env.REDIS_HOST, // Redis host
-    port: process.env.REDIS_PORT, // Redis port
+    host: process.env.REDIS_HOST,
+    port: process.env.REDIS_PORT,
   },
 });
 
-// Connect to Redis
 (async () => {
   try {
     await client.connect();
