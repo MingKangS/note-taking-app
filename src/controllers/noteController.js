@@ -64,7 +64,7 @@ const getNoteById = async (req, res) => {
 
 const updateNote = async (req, res) => {
   const { id } = req.params;
-  const { content } = req.body;
+  const { title, content, version } = req.body;
   const userId = req.user.userId;
 
   try {
@@ -78,10 +78,22 @@ const updateNote = async (req, res) => {
       order: [["version", "DESC"]],
     });
 
+    if (version !== latestVersion.version) {
+      return res.status(409).json({
+        error: "Conflict: The note has been updated by someone else.",
+        latestVersion: latestVersion.version,
+      });
+    }
+
+    if (title) {
+      note.title = title;
+      await note.save();
+    }
+
     const newVersion = latestVersion.version + 1;
     await NoteVersion.create({ version: newVersion, content, noteId: id });
 
-    res.status(200).json({ message: "Note updated successfully" });
+    res.status(200).json({ message: "Note updated successfully", newVersion });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
