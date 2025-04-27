@@ -11,4 +11,14 @@ const createNote = async (req, res) => {
   }
 };
 
-module.exports = { createNote };
+const getAllNotes = async (req, res) => {
+  const userId = req.user.userId; // Assuming `req.user` contains the authenticated user's ID
+  try {
+    const notes = await Note.findAll({ where: { userId } });
+    res.status(200).json({ notes });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { createNote, getAllNotes };
