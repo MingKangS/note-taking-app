@@ -7,7 +7,8 @@
     "dev": "nodemon index.js",
     "docker:dev": "docker-compose up db redis",
     "docker:start": "docker-compose up --build",
-    "docker:stop": "docker-compose down"
+    "docker:stop": "docker-compose down",
+		"migrate": "npx sequelize-cli db:migrate"
   },
   "keywords": [],
   "author": "",

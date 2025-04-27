@@ -1,5 +1,6 @@
 const Note = require("../models/Note");
 const NoteVersion = require("../models/NoteVersion");
+const { Op } = require("sequelize");
 
 const createNote = async (req, res) => {
   const { title, content } = req.body;
@@ -120,10 +121,40 @@ const softDeleteNote = async (req, res) => {
   }
 };
 
+const searchNotes = async (req, res) => {
+  const { keyword } = req.query;
+  const userId = req.user.userId;
+
+  try {
+    if (!keyword) {
+      return res.status(400).json({ error: "Keyword is required for search" });
+    }
+
+    const notes = await Note.findAll({
+      where: { userId, isDeleted: false },
+      include: [
+        {
+          model: NoteVersion,
+          attributes: ["version", "content"],
+          where: Sequelize.literal(
+            `MATCH(content) AGAINST(:keyword IN NATURAL LANGUAGE MODE)`
+          ),
+          replacements: { keyword },
+        },
+      ],
+    });
+
+    res.status(200).json({ notes });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   createNote,
   getAllNotes,
   getNoteById,
   updateNote,
   softDeleteNote,
+  searchNotes,
 };
