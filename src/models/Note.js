@@ -15,6 +15,11 @@ const Note = sequelize.define("Note", {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+  isDeleted: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
 });
 
 module.exports = Note;

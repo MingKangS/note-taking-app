@@ -19,7 +19,7 @@ const getAllNotes = async (req, res) => {
 
   try {
     const notes = await Note.findAll({
-      where: { userId },
+      where: { userId, isDeleted: false },
       include: [
         {
           model: NoteVersion,
@@ -52,8 +52,10 @@ const getNoteById = async (req, res) => {
       ],
     });
 
-    if (!note) {
-      return res.status(404).json({ error: "Note not found" });
+    if (!note || note.isDeleted) {
+      return res
+        .status(404)
+        .json({ error: "Note not found or has been deleted" });
     }
 
     res.status(200).json({ note });
@@ -99,4 +101,29 @@ const updateNote = async (req, res) => {
   }
 };
 
-module.exports = { createNote, getAllNotes, getNoteById, updateNote };
+const softDeleteNote = async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.userId;
+
+  try {
+    const note = await Note.findOne({ where: { id, userId } });
+    if (!note) {
+      return res.status(404).json({ error: "Note not found" });
+    }
+
+    note.isDeleted = true;
+    await note.save();
+
+    res.status(200).json({ message: "Note deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = {
+  createNote,
+  getAllNotes,
+  getNoteById,
+  updateNote,
+  softDeleteNote,
+};
