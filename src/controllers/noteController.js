@@ -21,4 +21,19 @@ const getAllNotes = async (req, res) => {
   }
 };
 
-module.exports = { createNote, getAllNotes };
+const getNoteById = async (req, res) => {
+  const { id } = req.params; // Get the note ID from the route parameter
+  const userId = req.user.userId; // Get the authenticated user's ID from `req.user`
+
+  try {
+    const note = await Note.findOne({ where: { id, userId } }); // Ensure the note belongs to the user
+    if (!note) {
+      return res.status(404).json({ error: "Note not found" });
+    }
+    res.status(200).json({ note });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { createNote, getAllNotes, getNoteById };
