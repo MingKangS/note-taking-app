@@ -43,7 +43,7 @@ const getNoteById = async (req, res) => {
 
   try {
     const note = await Note.findOne({
-      where: { id, userId },
+      where: { id },
       include: [
         {
           model: NoteVersion,
@@ -59,6 +59,12 @@ const getNoteById = async (req, res) => {
         .json({ error: "Note not found or has been deleted" });
     }
 
+    if (note.userId !== userId) {
+      return res
+        .status(403)
+        .json({ error: "Access denied: Unauthorized user" });
+    }
+
     res.status(200).json({ note });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -71,9 +77,14 @@ const updateNote = async (req, res) => {
   const userId = req.user.userId;
 
   try {
-    const note = await Note.findOne({ where: { id, userId } });
+    const note = await Note.findOne({ where: { id } });
     if (!note) {
       return res.status(404).json({ error: "Note not found" });
+    }
+    if (note.userId !== userId) {
+      return res
+        .status(403)
+        .json({ error: "Access denied: Unauthorized user" });
     }
 
     const newVersion = latestVersion.version + 1;
@@ -101,9 +112,15 @@ const softDeleteNote = async (req, res) => {
   const userId = req.user.userId;
 
   try {
-    const note = await Note.findOne({ where: { id, userId } });
+    const note = await Note.findOne({ where: { id } });
     if (!note) {
       return res.status(404).json({ error: "Note not found" });
+    }
+
+    if (note.userId !== userId) {
+      return res
+        .status(403)
+        .json({ error: "Access denied: Unauthorized user" });
     }
 
     note.isDeleted = true;
