@@ -110,6 +110,19 @@ const updateNote = async (req, res) => {
         .json({ error: "Access denied: Unauthorized user" });
     }
 
+    const latestVersion = await NoteVersion.findOne({
+      where: { noteId: id },
+      order: [["version", "DESC"]],
+    });
+
+    if (version !== latestVersion.version) {
+      return res.status(409).json({
+        error:
+          "Conflict: The note version that you are currently on is outdated.",
+        latestVersion: latestVersion.version,
+      });
+    }
+
     const newVersion = latestVersion.version + 1;
     await NoteVersion.create({ version: newVersion, content, noteId: id });
 
