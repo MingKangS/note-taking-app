@@ -1,6 +1,7 @@
 const Note = require("../models/Note");
 const NoteVersion = require("../models/NoteVersion");
 const { Op } = require("sequelize");
+const redisClient = require("../config/redis");
 
 const createNote = async (req, res) => {
   const { title, content } = req.body;
@@ -9,6 +10,10 @@ const createNote = async (req, res) => {
   try {
     const note = await Note.create({ title, userId });
     await NoteVersion.create({ version: 1, content, noteId: note.id });
+
+    const cacheKey = `getAllNotes:${userId}`;
+    await redisClient.del(cacheKey);
+
     res.status(201).json({ message: "Note created successfully", note });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -19,6 +24,13 @@ const getAllNotes = async (req, res) => {
   const userId = req.user.userId;
 
   try {
+    const cacheKey = `getAllNotes:${userId}`;
+    const cachedNotes = await redisClient.get(cacheKey);
+
+    if (cachedNotes) {
+      return res.status(200).json({ notes: JSON.parse(cachedNotes) });
+    }
+
     const notes = await Note.findAll({
       where: { userId, isDeleted: false },
       include: [
@@ -31,6 +43,8 @@ const getAllNotes = async (req, res) => {
       ],
     });
 
+    await redisClient.setEx(cacheKey, 60 * 60 * 24 * 30, JSON.stringify(notes));
+
     res.status(200).json({ notes });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -42,6 +56,13 @@ const getNoteById = async (req, res) => {
   const userId = req.user.userId;
 
   try {
+    const cacheKey = `getNoteById:${id}`;
+    const cachedNote = await redisClient.get(cacheKey);
+
+    if (cachedNote) {
+      return res.status(200).json({ note: JSON.parse(cachedNote) });
+    }
+
     const note = await Note.findOne({
       where: { id },
       include: [
@@ -64,6 +85,8 @@ const getNoteById = async (req, res) => {
         .status(403)
         .json({ error: "Access denied: Unauthorized user" });
     }
+
+    await redisClient.setEx(cacheKey, 60 * 60 * 24 * 30, JSON.stringify(note));
 
     res.status(200).json({ note });
   } catch (error) {
@@ -95,6 +118,9 @@ const updateNote = async (req, res) => {
       await note.save();
     }
 
+    await redisClient.del(`getAllNotes:${userId}`);
+    await redisClient.del(`getNoteById:${id}`);
+
     res.status(200).json({ message: "Note updated successfully", newVersion });
   } catch (error) {
     if (error.name === "SequelizeUniqueConstraintError") {
@@ -125,6 +151,9 @@ const softDeleteNote = async (req, res) => {
 
     note.isDeleted = true;
     await note.save();
+
+    await redisClient.del(`getAllNotes:${userId}`);
+    await redisClient.del(`getNoteById:${id}`);
 
     res.status(200).json({ message: "Note deleted successfully" });
   } catch (error) {
