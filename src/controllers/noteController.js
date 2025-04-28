@@ -76,28 +76,22 @@ const updateNote = async (req, res) => {
       return res.status(404).json({ error: "Note not found" });
     }
 
-    const latestVersion = await NoteVersion.findOne({
-      where: { noteId: id },
-      order: [["version", "DESC"]],
-    });
-
-    if (version !== latestVersion.version) {
-      return res.status(409).json({
-        error: "Conflict: The note has been updated by someone else.",
-        latestVersion: latestVersion.version,
-      });
-    }
+    const newVersion = latestVersion.version + 1;
+    await NoteVersion.create({ version: newVersion, content, noteId: id });
 
     if (title) {
       note.title = title;
       await note.save();
     }
 
-    const newVersion = latestVersion.version + 1;
-    await NoteVersion.create({ version: newVersion, content, noteId: id });
-
     res.status(200).json({ message: "Note updated successfully", newVersion });
   } catch (error) {
+    if (error.name === "SequelizeUniqueConstraintError") {
+      return res.status(409).json({
+        error:
+          "Conflict: A version with the same noteId and version already exists.",
+      });
+    }
     res.status(500).json({ error: error.message });
   }
 };

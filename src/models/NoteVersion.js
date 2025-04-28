@@ -5,11 +5,6 @@ const Note = require("./Note");
 const NoteVersion = sequelize.define(
   "NoteVersion",
   {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-    },
     version: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -34,6 +29,7 @@ const NoteVersion = sequelize.define(
         fields: ["content"],
       },
     ],
+    primaryKey: ["noteId", "version"],
   }
 );
 
