@@ -28,6 +28,9 @@ const NoteVersion = sequelize.define(
         type: "FULLTEXT",
         fields: ["content"],
       },
+      {
+        fields: ["noteId"],
+      },
     ],
     primaryKey: ["noteId", "version"],
   }
