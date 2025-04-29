@@ -7,11 +7,25 @@ const authMiddleware = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    const verified = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = verified;
+
+    const currentTime = Math.floor(Date.now() / 1000);
+    const timeLeft = verified.exp - currentTime;
+
+    if (timeLeft < 60 * 10) {
+      const newAccessToken = jwt.sign(
+        { userId: verified.userId },
+        process.env.JWT_SECRET,
+        { expiresIn: "1h" }
+      );
+
+      res.setHeader("Authorization", `Bearer ${newAccessToken}`);
+    }
+
     next();
   } catch (error) {
-    res.status(401).json({ error: "Invalid token" });
+    res.status(401).json({ error: "Invalid or expired token" });
   }
 };
 
