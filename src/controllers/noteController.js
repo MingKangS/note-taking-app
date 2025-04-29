@@ -1,6 +1,6 @@
 const Note = require("../models/Note");
 const NoteVersion = require("../models/NoteVersion");
-const { Op } = require("sequelize");
+const { Op, Sequelize } = require("sequelize");
 const redisClient = require("../config/redis");
 
 const createNote = async (req, res) => {
@@ -189,10 +189,11 @@ const searchNotes = async (req, res) => {
         {
           model: NoteVersion,
           attributes: ["version", "content"],
-          where: Sequelize.literal(
-            `MATCH(content) AGAINST(:keyword IN NATURAL LANGUAGE MODE)`
-          ),
-          replacements: { keyword },
+          where: {
+            [Op.and]: Sequelize.literal(
+              `MATCH(content) AGAINST('${keyword}' IN NATURAL LANGUAGE MODE)`
+            ),
+          },
         },
       ],
     });

@@ -8,7 +8,7 @@ const NoteVersion = sequelize.define(
     version: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      primaryKey: true, // Mark as part of the composite primary key
+      primaryKey: true,
     },
     content: {
       type: DataTypes.TEXT,
@@ -17,7 +17,7 @@ const NoteVersion = sequelize.define(
     noteId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      primaryKey: true, // Mark as part of the composite primary key
+      primaryKey: true,
       references: {
         model: Note,
         key: "id",
