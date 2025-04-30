@@ -1,0 +1,111 @@
+# Project set up
+
+1. Environment Variables Update the .env file with the following values:
+
+```
+NODE_ENV=development
+DB_HOST=db
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=root
+DB_NAME=notes
+REDIS_HOST=redis
+REDIS_PORT=6379
+JWT_SECRET=your_jwt_secret
+```
+
+2. To run the project on dev mode, first run **npm install**.
+
+3. Run **npm run docker:dev** to start the redis and mysql instances.
+
+4. **npm run dev** to run the app locally.
+
+# Endpoints
+
+## Authentication
+
+1. POST /auth/signup
+   Create a new user.
+   Request Body:
+
+```
+{
+"email": "user@example.com",
+"password": "password123"
+}
+```
+
+2. POST /auth/login
+   Log in and receive an access token.
+   Request Body:
+
+```
+{
+"email": "user@example.com",
+"password": "password123"
+}
+```
+
+## Notes
+
+3. POST /notes
+   Create a new note.
+   Request Body:
+
+```
+{
+"title": "Note Title",
+"content": "Note Content"
+}
+```
+
+4. GET /notes
+   Retrieve all notes for the authenticated user.
+
+5. GET /notes/:id
+   Retrieve a specific note by its ID.
+
+6. PUT /notes/:id
+   Update a specific note.
+   Request Body:
+
+```
+{
+"title": "Updated Title",
+"content": "Updated Content"
+}
+```
+
+7. DELETE /notes/:id
+   Soft delete a specific note.
+
+8. GET /notes/search?keyword=any-keyword
+   Search for notes containing the specified keyword.
+
+## Technical Analysis
+
+### Overview
+
+The app is a note taking Backend app that takes in data via it's endpoints. The technologies used are exactly as described in the assessment documentation namely ExpressJS, MySQL, Redis, Sequelize, and Docker.
+
+For authentication we use JWT signed with a secret key that is stored in the .env file. Passwords are encrypted and stored in the DB for security. I have also implemented a refresh token logic in the authMiddleware where if the user made a request to any authenticated endpoint and his token is near expiry then we sign a new access token and return it to him to maintain his session.
+
+For the Notes we have also provide CRUD endpoints. We use two tables in MySQL Namely **Notes** and **NoteVersions**. One **Note** can have many **NoteVersions**. Every time the user updates a note, a new **NoteVersion** is created to preserve the history of the note versions. **NoteVersion** has a composite primary key that is noteId and version. This combination is unique in the table. This ensures that no two note versions of the same note are the same so that concurrency is handled.
+
+When making a request to updateNote, the user must also provide the version of the note that he is currently on. If the version that the user is on is not the latest it means that it is not the most updated and the request will be rejected.
+
+The results of getAllNotes and getNoteById are cached in Redis to speed up the returned results. As a cache invalidation strategy, every time a Note is updated or created or deleted, we clear up the cache for that specific note because the new results will be different.
+
+When the softDeleteNote endpoint is called, we do not actually delete the note but only update it's **isDeleted** property. This ensures that we do not delete previous versions of the note and the user can restore a deleted note. Deleted notes will not be returned in any list note endpoints.
+
+For the searchNotes endpoint we are using a Full Text Search to match the keyword instead of a simple LIKE operation to search for the keyword in the DB. Full Text Search is highly efficient and returns better results.
+
+### Discussions
+
+1. To handle concurrency, a variation of optimistic locking is used. The version and noteId is used as as the unique composite primary key. When multiple requests come in to updateNote, only the earliest one will be able to create a new **NoteVersion**. Subsequent requests will fail because the composite primary key will not be unique anymore. Internally, MySQL has a locking mechanism while creating a new row to make sure that the primary keys are unique.
+
+2. Every time a Note is updated or created or deleted, the cache is invalidated. While it is completely possible to build on to the cache results instead of deleting the cache, the tradeoff that I am making here is the consistency and integrity of the data. For example it would be possible to push onto the cache when we create a new note so that the cache also now stores the new note. But There are potential issue that we can run into with race conditions and concurrency when multiple create note requests are called so it is better to delete the cache and cache it later again when the GET endpoints are called.
+
+3. Given more time, the refresh token strategy would be better implemented if we have a both a refresh token and an access token instead of just refreshing the token when it is about to expire.
+
+4. Indexes are only created columns that I believe are a good tradeoff in terms of performance between frequency of reads and writes.
